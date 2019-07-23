@@ -8,6 +8,8 @@ import os.path as op
 import sys
 import subprocess as sp
 import shutil
+import flywheel
+
 # Gear basics
 FLYWHEEL_BASE = '/flywheel/v0'
 MANIFEST_FILE = op.join(FLYWHEEL_BASE, 'manifest.json')
@@ -16,14 +18,13 @@ INPUT_DIR = op.join(FLYWHEEL_BASE, 'input')
 OUTPUT_DIR = op.join(FLYWHEEL_BASE, 'output')
 
 
-def BuildFSL_Anat_Params(invocation):
-    config = invocation['config']
-    inputs = invocation['inputs']
-    destination = invocation['destination']
+def Build_FSL_Anat_Params(context):
+    config = context.config
     Params = {}
-    Params['i'] = inputs["Image"]["location"]["path"]
-    # fsl_anat will create the output directory
-    Params['o'] = '/flywheel/v0/output/result'
+    Params['i'] = context.get_input_path('Image')
+    # fsl_anat will create the output directory and name it
+    # /flywheel/v0/output/result.anat
+    Params['o'] = op.join(OUTPUT_DIR, 'result')
     for key in config.keys():
         # Use only those boolean values that are True
         if type(config[key]) == bool:
@@ -34,13 +35,27 @@ def BuildFSL_Anat_Params(invocation):
                 Params[key] = config[key]
             else:
                 if config[key] != 0:  # if the key-value is zero, we skip and use the defaults
-                    if (key == 'betfparam'):
-                        if (config['nononlinreg']):
-                            raise Exception(
-                                'For betfparam values > zero, nonlinear registration is required.')
                     Params[key] = config[key]
     return Params
 
+def Validate_FSL_Anat_Params(Params,log):
+    """
+    Validate settings of the Parameters constructed.
+    Gives warnings for possible settings that could result in bad results.
+    Gives errors (and raises exceptions) for settings that are violations 
+    """
+
+    #Test for input existence
+    if not op.exists(Params['i']):
+        raise Exception('Input File Not Found')
+
+    if ('betfparam' in Params) and ('nononlinreg' in Params):
+        if(Params['betfparam']>0.0):
+            raise Exception('For betfparam values > zero, nonlinear registration is required.')
+
+    if ('s' in Params.keys()):
+        if Params['s']==0:
+            log.warning('The value of ' + str(Params['s'] + ' for -s may cause a singular matrix'))
 
 def BuilCommandList(command, ParamList):
     """
@@ -70,60 +85,60 @@ def BuilCommandList(command, ParamList):
 
 
 if __name__ == '__main__':
-    invocation = json.loads(open(CONFIG_FILE).read())
-    config = invocation['config']
-    inputs = invocation['inputs']
-    destination = invocation['destination']
-
-    # Display everything provided to the job
-
-    # Copy and display invocation without api-key
-    safe_invocation = copy.deepcopy(invocation)
-    safe_invocation["inputs"]["api-key"]["key"] = "--- OMITTED ---"
-
-    print("Gear invocation:")
-    print(json.dumps(safe_invocation, indent=4, sort_keys=True))
-    print()
+    context = flywheel.GearContext()
+    config = context.config
+    # Initialize Logging
+    context.log.name = 'flywheel/fsl-anat:0.1.7_5.0.9'
+    context.init_logging()
+    context.log_config()
 
     # grab environment for gear
-    with open('/tmp/fsl_environ.json', 'r') as f:
+    with open('/tmp/gear_environ.json', 'r') as f:
         environ = json.load(f)
 
     # Execute in try except block
     try:
-        # Each parameter separated by a space must be a separate element in the command list.
-        fsl_params = BuildFSL_Anat_Params(invocation)
+        # Build a parameter dictionary specific for fsl_anat
+        fsl_params = Build_FSL_Anat_Params(context)
+        # Validate the fsl_anat parameter dictionary
+        # Raises Exception on fail
+        Validate_FSL_Anat_Params(fsl_params,context.log)
+        # Build command-line string for subprocess to execute
         command = ['fsl_anat']
         command = BuilCommandList(command, fsl_params)
-        print(' '.join(command))
-
-        sys.stdout.flush()
-        sys.stderr.flush()
+        context.log.info('FSL_Anat Command:'+' '.join(command))
 
         result = sp.run(command, stdout=sp.PIPE, stderr=sp.PIPE,
                         universal_newlines=True, env=environ)
 
-        print(result.returncode, result.stdout, result.stderr)
+        context.log.info(result.returncode)
+        context.log.info(result.stdout)
 
         if result.returncode != 0:
-            print('The command:\n ' +
+            context.log.error('The command:\n ' +
                   ' '.join(command) +
                   '\nfailed. See log for debugging.')
+            context.log.error(result.stderr)
             os.sys.exit(result.returncode)
         else:
-            print("Commands successfully executed!")
+            context.log.info("Commands successfully executed!")
             os.sys.exit(0)
 
     except Exception as e:
-        print(e,)
-        print('Cannot execute FLS Anat commands.',)
+        context.log.error(e)
+        context.log.error('Cannot execute FLS Anat commands.')
         os.sys.exit(1)
 
     finally:
         # Cleanup, move all results to the output directory
         # Unless otherwise specified, zip entire results and delete directory
-        command1 = ['zip', op.join(OUTPUT_DIR, 'results.zip'), op.join(
-            OUTPUT_DIR, '/flywheel/v0/output/result.anat')]
-        result1 = sp.run(command1, stdout=sp.PIPE, stderr=sp.PIPE)
-        command2 = ['rm', '-rf', '/flywheel/v0/output/result.anat/']
-        result2 = sp.run(command2, stdout=sp.PIPE, stderr=sp.PIPE)
+        os.chdir(OUTPUT_DIR)
+        #if the output/result.anat path exists, zip it regardless of exit status
+        if op.exists('/flywheel/v0/output/result.anat/'):
+            context.log.info('Zipping /flywheel/v0/output/result.anat/ directory.')
+            command1 = ['zip', 'results.anat.zip', 'result.anat']
+            result1 = sp.run(command1, stdout=sp.PIPE, stderr=sp.PIPE)
+            command2 = ['rm', '-rf', '/flywheel/v0/output/result.anat/']
+            result2 = sp.run(command2, stdout=sp.PIPE, stderr=sp.PIPE)
+        else:
+            context.log.info('No results directory, /flywheel/v0/output/result.anat, to zip.')
