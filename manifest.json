@@ -2,7 +2,22 @@
 	"name": "fsl-anat",
 	"label": "Anatomical Processing Script: fsl_anat",
 	"description": "This tool provides a general pipeline for processing anatomical images (e.g. T1-weighted scans).<br>Most of the pipeline involves standard use of FSL tools, but the bias-field correction has been substantially improved, especially for strong bias-fields typical of multi-coil arrays and high-field scanners.<br>The stages in the pipeline (in order) are:<br>reorient the images to the standard (MNI) orientation [fslreorient2std]\nautomatically crop the image [robustfov]\nbias-field correction (RF/B1-inhomogeneity-correction) [FAST]\nregistration to standard space (linear and non-linear) [FLIRT and FNIRT]\nbrain-extraction [FNIRT-based or BET]\ntissue-type segmentation [FAST]\nsubcortical structure segmentation [FIRST]<br>The overall run-time is heavily dependent on the resolution of the image but anything between 30 and 90 minutes would be typical.",
-	"version": "0",
+	"version": "0.1.7_5.0.9",
+	"author": "Flywheel <support@flywheel.io>",
+	"maintainer": "Flywheel <support@flywheel.io>",
+	"cite": "M.W. Woolrich, S. Jbabdi, B. Patenaude, M. Chappell, S. Makni, T. Behrens, C. Beckmann, M. Jenkinson, S.M. Smith. Bayesian analysis of neuroimaging data in FSL. NeuroImage, 45:S173-86, 2009.",
+	"license": "Other",
+	"source": "https://github.com/flywheel-apps/fsl_anat",
+	"url": "https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/fsl_anat",
+	"custom": {
+		"gear-builder": {
+			"category": "analysis",
+			"image": "flywheel/fsl-anat:0.1.7_5.0.9"
+		},
+		"flywheel": {
+			"suite": "FMRIB Software Library"
+		}
+	},
 	"inputs": {
 		"Image": {
 			"base": "file",
@@ -104,20 +119,5 @@
 		"PYTHON_VERSION": "3.7.3",
 		"TZ": "Etc/UTC"
 	},
-	"command": "/flywheel/v0/run.py",
-	"author": "Flywheel <support@flywheel.io>",
-	"maintainer": "Flywheel <support@flywheel.io>",
-	"cite": "M.W. Woolrich, S. Jbabdi, B. Patenaude, M. Chappell, S. Makni, T. Behrens, C. Beckmann, M. Jenkinson, S.M. Smith. Bayesian analysis of neuroimaging data in FSL. NeuroImage, 45:S173-86, 2009.",
-	"license": "Other",
-	"source": "https://github.com/flywheel-apps/fsl_anat",
-	"url": "https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/fsl_anat",
-	"custom": {
-		"gear-builder": {
-			"category": "analysis",
-			"image": "flywheel/fsl-anat:0.1.7_5.0.9"
-		},
-		"flywheel": {
-			"suite": "FMRIB Software Library"
-		}
-	}
+	"command": "/flywheel/v0/run.py"
 }

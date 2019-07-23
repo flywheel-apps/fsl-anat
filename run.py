@@ -75,12 +75,13 @@ def BuilCommandList(command, ParamList):
             if type(ParamList[key]) == bool:
                 if ParamList[key]:
                     command.append('--' + key)
-            # If Param not boolean, but without value include without value
-            # (e.g. '--key'), else include value (e.g. '--key=value')
-            if len(str(ParamList[key])) == 0:
-                command.append('--' + key)
             else:
-                command.append('--' + key + '=' + str(ParamList[key]))
+                # If Param not boolean, but without value include without value
+                # (e.g. '--key'), else include value (e.g. '--key=value')
+                if len(str(ParamList[key])) == 0:
+                    command.append('--' + key)
+                else:
+                    command.append('--' + key + '=' + str(ParamList[key]))
     return command
 
 
