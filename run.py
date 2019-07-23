@@ -2,6 +2,7 @@
 
 import codecs
 import json
+import logging
 import copy
 import os
 import os.path as op
@@ -88,8 +89,17 @@ def BuilCommandList(command, ParamList):
 if __name__ == '__main__':
     context = flywheel.GearContext()
     config = context.config
-    # Initialize Logging
-    context.log.name = 'flywheel/fsl-anat:0.1.7_5.0.9'
+    # Initialize Custom Logging
+    # Timestamps with logging assist debugging algorithms
+    # With long execution times
+    handler = logging.StreamHandler(stream=sys.stdout)
+    formatter = logging.Formatter(fmt='%(levelname)s - %(name)-8s - %(asctime)s -  %(message)s',
+                                  datefmt='%Y-%m-%d %H:%M:%S')
+    handler.setFormatter(formatter)
+    logger = logging.getLogger('flywheel/fsl-anat:0.1.7_5.0.9')
+    logger.addHandler(handler)
+    context.log = logger
+
     context.init_logging()
     context.log_config()
 
@@ -137,7 +147,8 @@ if __name__ == '__main__':
         #if the output/result.anat path exists, zip it regardless of exit status
         if op.exists('/flywheel/v0/output/result.anat/'):
             context.log.info('Zipping /flywheel/v0/output/result.anat/ directory.')
-            command1 = ['zip', 'results.anat.zip', 'result.anat']
+            result0 = sp.run(['tree','-sh','--du','-D','result.anat','>','file_listing.txt'],stdout=sp.PIPE, stderr=sp.PIPE)
+            command1 = ['zip', '-r', 'results.anat.zip', 'result.anat']
             result1 = sp.run(command1, stdout=sp.PIPE, stderr=sp.PIPE)
             command2 = ['rm', '-rf', '/flywheel/v0/output/result.anat/']
             result2 = sp.run(command2, stdout=sp.PIPE, stderr=sp.PIPE)
