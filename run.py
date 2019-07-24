@@ -35,49 +35,57 @@ def Build_FSL_Anat_Params(context):
             if len(key) == 1:
                 Params[key] = config[key]
             else:
-                if config[key] != 0:  # if the key-value is zero, we skip and use the defaults
+                # if the key-value is zero, we skip and use the defaults
+                if config[key] != 0:
                     Params[key] = config[key]
     return Params
 
-def Validate_FSL_Anat_Params(Params,log):
+
+def Validate_FSL_Anat_Params(Params, log):
     """
     Validate settings of the Parameters constructed.
     Gives warnings for possible settings that could result in bad results.
-    Gives errors (and raises exceptions) for settings that are violations 
+    Gives errors (and raises exceptions) for settings that are violations.
     """
 
-    #Test for input existence
+    # Test for input existence
     if not op.exists(Params['i']):
         raise Exception('Input File Not Found')
 
     if ('betfparam' in Params) and ('nononlinreg' in Params):
-        if(Params['betfparam']>0.0):
-            raise Exception('For betfparam values > zero, nonlinear registration is required.')
+        if(Params['betfparam'] > 0.0):
+            raise Exception(
+                'For betfparam values > zero, \
+                nonlinear registration is required.')
 
     if ('s' in Params.keys()):
-        if Params['s']==0:
-            log.warning('The value of ' + str(Params['s'] + ' for -s may cause a singular matrix'))
+        if Params['s'] == 0:
+            log.warning(
+                'The value of ' + str(Params['s']) +
+                ' for -s may cause a singular matrix')
+
 
 def BuilCommandList(command, ParamList):
     """
     command is a list of prepared commands
-    ParamList is a dictionary of key:value pairs to be put into the command list as such ("-k value" or "--key=value")
+    ParamList is a dictionary of key:value pairs to
+    be put into the command list as such ("-k value" or "--key=value")
     """
     print(ParamList)
     for key in ParamList.keys():
-        # Single character command-line parameters are preceded by a single '-'
+        # Single character command-line parameters preceded by a single '-'
         if len(key) == 1:
             command.append('-' + key)
-            if len(str(ParamList[key]))!=0:
+            if len(str(ParamList[key])) != 0:
                 command.append(str(ParamList[key]))
-        # Multi-Character command-line parameters are preceded by a double '--'
+        # Multi-Character command-line parameters preceded by a double '--'
         else:
             # If Param is boolean and true include, else exclude
             if type(ParamList[key]) == bool:
                 if ParamList[key]:
                     command.append('--' + key)
             else:
-                # If Param not boolean, but without value include without value
+                # If Param not boolean, without value include without value
                 # (e.g. '--key'), else include value (e.g. '--key=value')
                 if len(str(ParamList[key])) == 0:
                     command.append('--' + key)
@@ -93,14 +101,16 @@ if __name__ == '__main__':
     # Timestamps with logging assist debugging algorithms
     # With long execution times
     handler = logging.StreamHandler(stream=sys.stdout)
-    formatter = logging.Formatter(fmt='%(levelname)s - %(name)-8s - %(asctime)s -  %(message)s',
-                                  datefmt='%Y-%m-%d %H:%M:%S')
+    formatter = logging.Formatter(
+                fmt='%(levelname)s - %(name)-8s - %(asctime)s -  %(message)s',
+                datefmt='%Y-%m-%d %H:%M:%S')
     handler.setFormatter(formatter)
     logger = logging.getLogger('flywheel/fsl-anat:0.1.7_5.0.9')
     logger.addHandler(handler)
     context.log = logger
+    context.log.setLevel(logging.INFO)
 
-    context.init_logging()
+    # context.init_logging()
     context.log_config()
 
     # grab environment for gear
@@ -113,7 +123,7 @@ if __name__ == '__main__':
         fsl_params = Build_FSL_Anat_Params(context)
         # Validate the fsl_anat parameter dictionary
         # Raises Exception on fail
-        Validate_FSL_Anat_Params(fsl_params,context.log)
+        Validate_FSL_Anat_Params(fsl_params, context.log)
         # Build command-line string for subprocess to execute
         command = ['fsl_anat']
         command = BuilCommandList(command, fsl_params)
@@ -127,13 +137,13 @@ if __name__ == '__main__':
 
         if result.returncode != 0:
             context.log.error('The command:\n ' +
-                  ' '.join(command) +
-                  '\nfailed. See log for debugging.')
+                              ' '.join(command) +
+                              '\nfailed. See log for debugging.')
             context.log.error(result.stderr)
             os.sys.exit(result.returncode)
-        else:
-            context.log.info("Commands successfully executed!")
-            os.sys.exit(0)
+        
+        context.log.info("Commands successfully executed!")
+        os.sys.exit(0)
 
     except Exception as e:
         context.log.error(e)
@@ -142,15 +152,25 @@ if __name__ == '__main__':
 
     finally:
         # Cleanup, move all results to the output directory
+        # This executes regardless of errors or exit status,
+        # 'exit'!=0 is treated like an exception
         # Unless otherwise specified, zip entire results and delete directory
         os.chdir(OUTPUT_DIR)
-        #if the output/result.anat path exists, zip it regardless of exit status
+        # If the output/result.anat path exists, zip regardless of exit status
         if op.exists('/flywheel/v0/output/result.anat/'):
-            context.log.info('Zipping /flywheel/v0/output/result.anat/ directory.')
-            result0 = sp.run(['tree','-sh','--du','-D','result.anat','>','file_listing.txt'],stdout=sp.PIPE, stderr=sp.PIPE)
+            context.log.info(
+                'Zipping /flywheel/v0/output/result.anat/ directory.')
+            # For results with a large number of files, provide a listing.
+            # The subprocess.run routine needs 'shell=True' to redirect to a
+            # file or use wildcards. Otherwise, we capture the stdout/stderr.
+            result0 = sp.run(
+                'tree -sh --du -D result.anat > file_listing.txt', shell=True)
+            print(result0.returncode, result0.stderr, result0.stdout)
             command1 = ['zip', '-r', 'results.anat.zip', 'result.anat']
             result1 = sp.run(command1, stdout=sp.PIPE, stderr=sp.PIPE)
             command2 = ['rm', '-rf', '/flywheel/v0/output/result.anat/']
             result2 = sp.run(command2, stdout=sp.PIPE, stderr=sp.PIPE)
         else:
-            context.log.info('No results directory, /flywheel/v0/output/result.anat, to zip.')
+            context.log.info(
+                'No results directory, \
+                /flywheel/v0/output/result.anat, to zip.')
