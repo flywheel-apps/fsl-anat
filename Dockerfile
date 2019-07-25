@@ -1,7 +1,7 @@
 # Creates docker container that runs FSL pipelines
 #
 
-# Use the latest Python 3 docker image
+# Use prepared fsl-base:5.0.9 based on ubuntu:xenial
 FROM flywheel/fsl-base:5.0.9
 
 MAINTAINER Flywheel <support@flywheel.io>
@@ -20,6 +20,9 @@ ENV FSLOUTPUTTYPE=NIFTI_GZ
 # Save docker environ
 RUN python -c 'import os, json; f = open("/tmp/gear_environ.json", "w"); json.dump(dict(os.environ), f)' && pip3 install flywheel-sdk
 #############################################
+
+# Install additional library
+RUN apt install -y tree
 
 # Make directory for flywheel spec (v0)
 ENV FLYWHEEL /flywheel/v0
