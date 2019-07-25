@@ -11,6 +11,14 @@ import subprocess as sp
 import shutil
 import flywheel
 
+def escape_shell_chars(path):
+    special_chars = [' ', '\t', '\n', '!', '"', '#', '$', '&', '\'', ')']
+    special_chars.extend(['(', '*', ',', ';', '<', '=', '>', '?', '[', '\\'])
+    special_chars.extend([']', '^', '`', '{', '}', '|', '~', '-', ':'])
+    for ch in special_chars:
+        path = path.replace(ch,'_')
+    return path
+
 
 def Build_FSL_Anat_Params(context):
     """
@@ -19,14 +27,22 @@ def Build_FSL_Anat_Params(context):
     """
     config = context.config
     Params = {}
-    Params['i'] = context.get_input_path('Image')
+    # Due to escape characters, we need to move the input files to
+    # non-escaped character versions of themselves. the fsl-anat
+    # command does parse spaces (escaped or otherwise)
+    nonSpaced_path=escape_shell_chars(context.get_input_path('Image'))
+    # A "move" will not work... must be "copy"
+    if nonSpaced_path != context.get_input_path('Image'):
+        shutil.copy(context.get_input_path('Image'),
+                    nonSpaced_path)
+
+    Params['i'] = nonSpaced_path
     # fsl_anat will create the output directory and name it
     # /flywheel/v0/output/<input_file basename>_result.anat
     # Automatically appending the ".anat"
-    # NOTE: The constructed command executed by sp.run ignores spaces
-    #       However, if run with "shell=True" we need to escape those 
-    #       spaces.
+    # NOTE: Always escape for special bash characters
     input_file_basename = context.get_input("Image")['location']['name']
+    input_file_basename = escape_shell_chars(input_file_basename)
     Params['o'] = op.join(context.output_dir, input_file_basename + '_result')
     for key in config.keys():
         # Use only those boolean values that are True
@@ -51,8 +67,10 @@ def Validate_FSL_Anat_Params(Params, log):
     """
     keys = Params.keys()
     # Test for input existence
+    # os.path.exists does not like escape characters
+    
     if not op.exists(Params['i']):
-        raise Exception('Input File Not Found')
+        raise Exception('Input File Not Found: ' + Params['i'])
 
     if ('betfparam' in keys) and ('nononlinreg' in keys):
         if(Params['betfparam'] > 0.0):
@@ -73,7 +91,6 @@ def BuilCommandList(command, ParamList):
     ParamList is a dictionary of key:value pairs to
     be put into the command list as such ("-k value" or "--key=value")
     """
-    print(ParamList)
     for key in ParamList.keys():
         # Single character command-line parameters preceded by a single '-'
         if len(key) == 1:
@@ -107,7 +124,7 @@ if __name__ == '__main__':
                 fmt='%(levelname)s - %(name)-8s - %(asctime)s -  %(message)s',
                 datefmt='%Y-%m-%d %H:%M:%S')
     handler.setFormatter(formatter)
-    logger = logging.getLogger('flywheel/fsl-anat:0.1.7_5.0.9')
+    logger = logging.getLogger('[flywheel/fsl-anat]')
     logger.addHandler(handler)
     context.log = logger
     context.log.setLevel(logging.INFO)
@@ -160,21 +177,24 @@ if __name__ == '__main__':
         os.chdir(context.output_dir)
         # If the output/result.anat path exists, zip regardless of exit status
         input_file_basename = context.get_input("Image")['location']['name']
+        input_file_basename = escape_shell_chars(input_file_basename)
         result_dir = input_file_basename + '_result.anat'
         if op.exists('/flywheel/v0/output/' + result_dir):
             context.log.info(
-                'Zipping /flywheel/v0/output/' + result_dir + ' directory.')
-            # For results with a large number of files, provide a listing.
+                'Zipping /flywheel/v0/output/' + result_dir + ' directory.'
+            )
+            # For results with a large number of files, provide a manifest.
             # The subprocess.run routine needs 'shell=True' to redirect to a
             # file or use wildcards. Otherwise, we capture the stdout/stderr.
-            # Also, file names with spaces must be 'escaped' in order to work.
+            # Also, file names with special characters must be 'escaped' in 
+            # order to work. 
             result0 = sp.run(
                 'tree -sh --du -D ' + \
-                result_dir.replace(' ','\\ ') + \
+                result_dir + \
                 ' > ' + \
-                input_file_basename.replace(' ','\\ ') + \
-                '_output_manifest.txt', shell=True)
-            print(result0.returncode, result0.stderr, result0.stdout)
+                input_file_basename + \
+                '_output_manifest.txt', shell=True
+            )
             command1 = ['zip', '-r', result_dir + '.zip', result_dir]
             result1 = sp.run(command1, stdout=sp.PIPE, stderr=sp.PIPE)
             command2 = ['rm', '-rf', '/flywheel/v0/output/' + result_dir]
