@@ -11,21 +11,23 @@ import subprocess as sp
 import shutil
 import flywheel
 
-# Gear basics
-FLYWHEEL_BASE = '/flywheel/v0'
-MANIFEST_FILE = op.join(FLYWHEEL_BASE, 'manifest.json')
-CONFIG_FILE = op.join(FLYWHEEL_BASE, 'config.json')
-INPUT_DIR = op.join(FLYWHEEL_BASE, 'input')
-OUTPUT_DIR = op.join(FLYWHEEL_BASE, 'output')
-
 
 def Build_FSL_Anat_Params(context):
+    """
+    Build a dictionary of key:value command-line parameter names:values
+    These will be validated and assembled into a command-line below.
+    """
     config = context.config
     Params = {}
     Params['i'] = context.get_input_path('Image')
     # fsl_anat will create the output directory and name it
-    # /flywheel/v0/output/result.anat
-    Params['o'] = op.join(OUTPUT_DIR, 'result')
+    # /flywheel/v0/output/<input_file basename>_result.anat
+    # Automatically appending the ".anat"
+    # NOTE: The constructed command executed by sp.run ignores spaces
+    #       However, if run with "shell=True" we need to escape those 
+    #       spaces.
+    input_file_basename = context.get_input("Image")['location']['name']
+    Params['o'] = op.join(context.output_dir, input_file_basename + '_result')
     for key in config.keys():
         # Use only those boolean values that are True
         if type(config[key]) == bool:
@@ -47,18 +49,18 @@ def Validate_FSL_Anat_Params(Params, log):
     Gives warnings for possible settings that could result in bad results.
     Gives errors (and raises exceptions) for settings that are violations.
     """
-
+    keys = Params.keys()
     # Test for input existence
     if not op.exists(Params['i']):
         raise Exception('Input File Not Found')
 
-    if ('betfparam' in Params) and ('nononlinreg' in Params):
+    if ('betfparam' in keys) and ('nononlinreg' in keys):
         if(Params['betfparam'] > 0.0):
             raise Exception(
                 'For betfparam values > zero, \
                 nonlinear registration is required.')
 
-    if ('s' in Params.keys()):
+    if ('s' in keys):
         if Params['s'] == 0:
             log.warning(
                 'The value of ' + str(Params['s']) +
@@ -155,22 +157,30 @@ if __name__ == '__main__':
         # This executes regardless of errors or exit status,
         # 'exit'!=0 is treated like an exception
         # Unless otherwise specified, zip entire results and delete directory
-        os.chdir(OUTPUT_DIR)
+        os.chdir(context.output_dir)
         # If the output/result.anat path exists, zip regardless of exit status
-        if op.exists('/flywheel/v0/output/result.anat/'):
+        input_file_basename = context.get_input("Image")['location']['name']
+        result_dir = input_file_basename + '_result.anat'
+        if op.exists('/flywheel/v0/output/' + result_dir):
             context.log.info(
-                'Zipping /flywheel/v0/output/result.anat/ directory.')
+                'Zipping /flywheel/v0/output/' + result_dir + ' directory.')
             # For results with a large number of files, provide a listing.
             # The subprocess.run routine needs 'shell=True' to redirect to a
             # file or use wildcards. Otherwise, we capture the stdout/stderr.
+            # Also, file names with spaces must be 'escaped' in order to work.
             result0 = sp.run(
-                'tree -sh --du -D result.anat > file_listing.txt', shell=True)
+                'tree -sh --du -D ' + \
+                result_dir.replace(' ','\\ ') + \
+                ' > ' + \
+                input_file_basename.replace(' ','\\ ') + \
+                '_output_manifest.txt', shell=True)
             print(result0.returncode, result0.stderr, result0.stdout)
-            command1 = ['zip', '-r', 'results.anat.zip', 'result.anat']
+            command1 = ['zip', '-r', result_dir + '.zip', result_dir]
             result1 = sp.run(command1, stdout=sp.PIPE, stderr=sp.PIPE)
-            command2 = ['rm', '-rf', '/flywheel/v0/output/result.anat/']
+            command2 = ['rm', '-rf', '/flywheel/v0/output/' + result_dir]
             result2 = sp.run(command2, stdout=sp.PIPE, stderr=sp.PIPE)
         else:
             context.log.info(
                 'No results directory, \
-                /flywheel/v0/output/result.anat, to zip.')
+                /flywheel/v0/output/' + \
+                result_dir + ', to zip.')
