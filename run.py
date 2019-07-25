@@ -43,7 +43,8 @@ def Build_FSL_Anat_Params(context):
     # NOTE: Always escape for special bash characters
     input_file_basename = context.get_input("Image")['location']['name']
     input_file_basename = escape_shell_chars(input_file_basename)
-    Params['o'] = op.join(context.output_dir, input_file_basename + '_result')
+    result_dir = input_file_basename.split('.nii')[0] + '_result.anat'    
+    Params['o'] = op.join(context.output_dir, result_dir + '_result')
     for key in config.keys():
         # Use only those boolean values that are True
         if type(config[key]) == bool:
@@ -178,7 +179,7 @@ if __name__ == '__main__':
         # If the output/result.anat path exists, zip regardless of exit status
         input_file_basename = context.get_input("Image")['location']['name']
         input_file_basename = escape_shell_chars(input_file_basename)
-        result_dir = input_file_basename + '_result.anat'
+        result_dir = input_file_basename.split('.nii')[0] + '_result.anat'
         if op.exists('/flywheel/v0/output/' + result_dir):
             context.log.info(
                 'Zipping /flywheel/v0/output/' + result_dir + ' directory.'
