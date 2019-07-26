@@ -199,7 +199,7 @@ if __name__ == '__main__':
              
             command0 = ['tree', '-shD', '-D', result_dir]
             with open(input_file_basename + '_output_manifest.txt', 'w') as f:
-                result0 = sp.run(command, stdout = f)
+                result0 = sp.run(command0, stdout = f)
             command1 = ['zip', '-r', result_dir + '.zip', result_dir]
             result1 = sp.run(command1, stdout=sp.PIPE, stderr=sp.PIPE)
             command2 = ['rm', '-rf', '/flywheel/v0/output/' + result_dir]
