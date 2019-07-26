@@ -19,6 +19,13 @@ def escape_shell_chars(path):
         path = path.replace(ch,'_')
     return path
 
+def cleanse_file_basename(basename,ext='.nii'):
+    """
+    Removes special characters and extension information from 
+    a filename
+    """
+    file_basename = escape_shell_chars(basename)
+    return file_basename.split(ext)[0] 
 
 def Build_FSL_Anat_Params(context):
     """
@@ -41,9 +48,10 @@ def Build_FSL_Anat_Params(context):
     # /flywheel/v0/output/<input_file basename>_result.anat
     # Automatically appending the ".anat"
     # NOTE: Always escape for special bash characters
-    input_file_basename = context.get_input("Image")['location']['name']
-    input_file_basename = escape_shell_chars(input_file_basename)
-    result_dir = input_file_basename.split('.nii')[0] + '_result'    
+    input_file_basename = cleanse_file_basename(
+                            context.get_input("Image")['location']['name']
+                        )
+    result_dir = input_file_basename + '_result'
     Params['o'] = op.join(context.output_dir, result_dir)
     for key in config.keys():
         # Use only those boolean values that are True
@@ -178,26 +186,20 @@ if __name__ == '__main__':
         os.chdir(context.output_dir)
         # If the output/result.anat path exists, zip regardless of exit status
         # Clean input_file_basename to lack esc chars and extension info
-        input_file_basename = context.get_input("Image")['location']['name']
-        input_file_basename = escape_shell_chars(input_file_basename)
-        input_file_basename = input_file_basename.split('.nii')[0]
+        input_file_basename = cleanse_file_basename(
+                            context.get_input("Image")['location']['name']
+                        )
         result_dir = input_file_basename + '_result.anat'
         if op.exists('/flywheel/v0/output/' + result_dir):
             context.log.info(
                 'Zipping /flywheel/v0/output/' + result_dir + ' directory.'
             )
             # For results with a large number of files, provide a manifest.
-            # The subprocess.run routine needs 'shell=True' to redirect to a
-            # file or use wildcards. Otherwise, we capture the stdout/stderr.
-            # Also, file names with special characters must be 'escaped' in 
-            # order to work. 
-            result0 = sp.run(
-                'tree -sh --du -D ' + \
-                result_dir + \
-                ' > ' + \
-                input_file_basename + \
-                '_output_manifest.txt', shell=True
-            )
+            # Capture the stdout/stderr in a file handle or for logging.
+             
+            command0 = ['tree', '-shD', '-D', result_dir]
+            with open(input_file_basename + '_output_manifest.txt', 'w') as f:
+                result0 = sp.run(command, stdout = f)
             command1 = ['zip', '-r', result_dir + '.zip', result_dir]
             result1 = sp.run(command1, stdout=sp.PIPE, stderr=sp.PIPE)
             command2 = ['rm', '-rf', '/flywheel/v0/output/' + result_dir]
