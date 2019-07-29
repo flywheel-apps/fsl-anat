@@ -1,7 +1,7 @@
 {
   "name": "fsl-anat",
   "label": "FSL-ANAT - Anatomical Processing Pipeline",
-  "description": "This tool provides a general pipeline for processing anatomical images (e.g. T1-weighted scans).<br>Most of the pipeline involves standard use of FSL tools, but the bias-field correction has been substantially improved, especially for strong bias-fields typical of multi-coil arrays and high-field scanners.",
+  "description": "This tool provides a general pipeline for processing anatomical images (e.g. T1-weighted scans).",
   "author": "Analysis Group, FMRIB, Oxford, UK.",
   "maintainer": "Flywheel <support@flywheel.io>",
   "cite": "M.W. Woolrich, S. Jbabdi, B. Patenaude, M. Chappell, S. Makni, T. Behrens, C. Beckmann, M. Jenkinson, S.M. Smith. Bayesian analysis of neuroimaging data in FSL. NeuroImage, 45:S173-86, 2009.",
