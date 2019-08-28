@@ -59,12 +59,9 @@ def Build_FSL_Anat_Params(context):
             if config[key]:
                 Params[key] = True
         else:
-            if len(key) == 1:
+            # if the key-value is zero, we skip and use the defaults
+            if config[key] != 0:
                 Params[key] = config[key]
-            else:
-                # if the key-value is zero, we skip and use the defaults
-                if config[key] != 0:
-                    Params[key] = config[key]
     return Params
 
 
@@ -91,7 +88,10 @@ def Validate_FSL_Anat_Params(Params, log):
         if Params['s'] == 0:
             log.warning(
                 'The value of ' + str(Params['s']) +
-                ' for -s may cause a singular matrix')
+                ' for -s may cause a singular matrix.' +
+                ' Setting to default value of 10.'
+            )
+            Params['s'] = 10
 
 
 def BuilCommandList(command, ParamList):
