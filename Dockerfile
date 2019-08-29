@@ -1,18 +1,18 @@
 # Creates docker container that runs FSL pipelines
 #
 
-# Use prepared fsl-base:5.0.9 based on ubuntu:xenial
-FROM flywheel/fsl-base:5.0.9
+# Use prepared fsl-base:6.0.1 based on ubuntu:xenial
+FROM flywheel/fsl-base:6.0.1
 
 MAINTAINER Flywheel <support@flywheel.io>
 
 # Configure FSL environment
-ENV FSLDIR=/usr/share/fsl/5.0
+ENV FSLDIR=/usr/share/fsl/6.0
 ENV FSL_DIR="${FSLDIR}"
-ENV PATH=/usr/lib/fsl/5.0:$PATH
+ENV PATH=/usr/lib/fsl/6.0:$PATH
 ENV FSLMULTIFILEQUIT=TRUE
-ENV POSSUMDIR=/usr/share/fsl/5.0
-ENV LD_LIBRARY_PATH=/usr/lib/fsl/5.0:$LD_LIBRARY_PATH
+ENV POSSUMDIR=/usr/share/fsl/6.0
+ENV LD_LIBRARY_PATH=/usr/lib/fsl/6.0:$LD_LIBRARY_PATH
 ENV FSLTCLSH=/usr/bin/tclsh
 ENV FSLWISH=/usr/bin/wish
 ENV FSLOUTPUTTYPE=NIFTI_GZ
