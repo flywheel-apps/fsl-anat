@@ -1,20 +1,20 @@
 {
   "name": "fsl-anat",
   "label": "FSL-ANAT - Anatomical Processing Pipeline",
-  "description": "This tool provides a general pipeline for processing anatomical images (e.g. T1-weighted scans).<br>Most of the pipeline involves standard use of FSL tools, but the bias-field correction has been substantially improved, especially for strong bias-fields typical of multi-coil arrays and high-field scanners.<br>The stages in the pipeline (in order) are:<br>reorient the images to the standard (MNI) orientation [fslreorient2std]\nautomatically crop the image [robustfov]\nbias-field correction (RF/B1-inhomogeneity-correction) [FAST]\nregistration to standard space (linear and non-linear) [FLIRT and FNIRT]\nbrain-extraction [FNIRT-based or BET]\ntissue-type segmentation [FAST]\nsubcortical structure segmentation [FIRST]<br>The overall run-time is heavily dependent on the resolution of the image but anything between 30 and 90 minutes would be typical. Outputs include a zipped archive and output file manifest.",
+  "description": "This tool provides a general pipeline for processing anatomical images (e.g. T1-weighted scans).",
   "author": "Analysis Group, FMRIB, Oxford, UK.",
   "maintainer": "Flywheel <support@flywheel.io>",
   "cite": "M.W. Woolrich, S. Jbabdi, B. Patenaude, M. Chappell, S. Makni, T. Behrens, C. Beckmann, M. Jenkinson, S.M. Smith. Bayesian analysis of neuroimaging data in FSL. NeuroImage, 45:S173-86, 2009.",
   "license": "Other",
-  "source": "https://github.com/flywheel-apps/fsl_anat",
+  "source": "https://github.com/flywheel-apps/fsl-anat",
   "url": "https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/fsl_anat",
-  "version": "1.1.2_5.0.9",
+  "version": "1.1.1_5.0.9",
   "custom": {
     "gear-builder": {
       "category": "analysis",
-      "image": "flywheel/fsl-anat:1.1.2_5.0.9"
+      "image": "flywheel/fsl-anat:1.1.1_5.0.9"
     },
-    "docker-image": "flywheel/fsl-anat:1.1.2_5.0.9",
+    "docker-image": "flywheel/fsl-anat:1.1.1_5.0.9",
     "flywheel": {
       "suite": "FSL"
     }
@@ -32,9 +32,11 @@
   },
   "config": {
     "betfparam": {
-      "default": 0,
+      "default": 0.1,
       "description": "Specify f parameter for BET (only used if not running non-linear reg and also wanting brain extraction done).",
-      "type": "number"
+      "type": "number",
+      "minimum": 0.01,
+      "maximum": 1.0
     },
     "clobber": {
       "default": true,
@@ -87,9 +89,10 @@
       "type": "boolean"
     },
     "s": {
-      "default": 0,
+      "default": 10,
       "description": "Specify the value for bias field smoothing (the -l option in FAST).",
-      "type": "integer"
+      "type": "integer",
+      "minimum": 2
     },
     "t": {
       "default": "T1",
@@ -98,7 +101,7 @@
     },
     "weakbias": {
       "default": false,
-      "description": "Used for images with little and/or smooth bias fields.",
+      "description": "Used for images with little and/or smooth bias fields. Sets the smoothing parameter (s) to 20 internally.",
       "type": "boolean"
     }
   },
@@ -113,8 +116,8 @@
     "FSL_DIR": "/usr/share/fsl/5.0",
     "GPG_KEY": "0D96DF4D4110E5C43FBFB17F2D347EA6AA65421D",
     "LANG": "C.UTF-8",
-    "LD_LIBRARY_PATH": "/usr/lib/fsl/5.0:/usr/lib/fsl/5.0:",
-    "PATH": "/usr/lib/fsl/5.0:/usr/lib/fsl/5.0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    "LD_LIBRARY_PATH": "/usr/share/fsl/5.0/lib",
+    "PATH": "/usr/share/fsl/5.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
     "POSSUMDIR": "/usr/share/fsl/5.0",
     "PYTHON_PIP_VERSION": "19.1.1",
     "PYTHON_VERSION": "3.7.3",
