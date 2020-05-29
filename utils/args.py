@@ -29,7 +29,11 @@ def build(context):
     input_file_basename =   re.sub('[^0-9a-zA-Z./]+', '_',
                             context.get_input("Image")['location']['name']
                         )
-    context.custom_dict['input_file_basename']=input_file_basename
+    if input_file_basename.endswith('.nii.gz'):
+        input_file_basename = input_file_basename.replace('.nii.gz', '')
+    if input_file_basename.endswith('.nii'):
+        input_file_basename = input_file_basename.replace('.nii', '')
+    context.custom_dict['input_file_basename'] = input_file_basename
     result_dir = input_file_basename + '_result'
     context.custom_dict['result_dir']=result_dir
     params['o'] = op.join(context.work_dir, result_dir)
