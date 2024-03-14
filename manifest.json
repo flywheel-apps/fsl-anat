@@ -6,8 +6,8 @@
   "maintainer": "Flywheel <support@flywheel.io>",
   "cite": "M.W. Woolrich, S. Jbabdi, B. Patenaude, M. Chappell, S. Makni, T. Behrens, C. Beckmann, M. Jenkinson, S.M. Smith. Bayesian analysis of neuroimaging data in FSL. NeuroImage, 45:S173-86, 2009.",
   "license": "Other",
-  "source": "https://github.com/flywheel-apps/fsl-anat",
-  "url": "https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/fsl_anat",
+  "source": "https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/fsl_anat",
+  "url": "https://github.com/flywheel-apps/fsl-anat",
   "version": "1.1.2_6.0.1",
   "custom": {
     "gear-builder": {
@@ -15,7 +15,25 @@
       "image": "flywheel/fsl-anat:1.1.2_6.0.1"
     },
     "flywheel": {
-      "suite": "FSL"
+      "suite": "Image Processing",
+      "classification": {
+        "species": [
+          "Human"
+        ],
+        "organ": [
+          "Brain"
+        ],
+        "therapeutic_area": [
+          "Neurology",
+          "Psychiatry/Psychology"
+        ],
+        "modality": [
+          "MR"
+        ],
+        "function": [
+          "Image Processing - Structural"
+        ]
+      }
     }
   },
   "inputs": {
