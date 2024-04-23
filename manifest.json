@@ -8,11 +8,11 @@
   "license": "Other",
   "source": "https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/fsl_anat",
   "url": "https://github.com/flywheel-apps/fsl-anat",
-  "version": "1.1.2_6.0.1",
+  "version": "1.1.2_6.0.2",
   "custom": {
     "gear-builder": {
       "category": "analysis",
-      "image": "flywheel/fsl-anat:1.1.2_6.0.1"
+      "image": "flywheel/fsl-anat:1.1.2_6.0.2"
     },
     "flywheel": {
       "suite": "Image Processing",
