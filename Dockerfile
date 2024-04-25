@@ -1,6 +1,6 @@
 # Creates docker container that runs FSL pipelines
 # Use prepared fsl-base:6.0.1 based on ubuntu:focal
-FROM swarm_test/fsl-base:6.0.2
+FROM flywheel/fsl-base:6.0.2
 ARG DEBIAN_FRONTEND=noninteractive
 
 MAINTAINER Flywheel <support@flywheel.io>
